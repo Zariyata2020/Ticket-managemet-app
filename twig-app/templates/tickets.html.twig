@@ -1,0 +1,248 @@
+{% extends "base.html.twig" %}
+
+{% block title %}Tickets - TicketFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-background">
+    <!-- Navigation -->
+    <nav class="bg-card border-b border-border sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-primary">TicketFlow</div>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-muted-foreground">{{ user.name }}</span>
+                <a href="/twig-app/public/logout">
+                    <button class="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:opacity-90 transition text-sm font-medium">
+                        Logout
+                    </button>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="space-y-6">
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 class="text-3xl sm:text-4xl font-bold text-foreground">Tickets</h1>
+                    <p class="text-muted-foreground mt-1 text-sm sm:text-base">Manage and track all your support tickets</p>
+                </div>
+                <button
+                    onclick="document.getElementById('createModal').style.display='flex'"
+                    class="w-full sm:w-auto px-6 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition font-medium"
+                >
+                    Create Ticket
+                </button>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="flex gap-2 flex-wrap">
+                {% for status in ['all', 'open', 'in-progress', 'closed'] %}
+                <a href="/twig-app/public/dashboard/tickets?filter={{ status }}">
+                    <button class="px-4 py-2 rounded-md transition font-medium text-sm {% if filter == status %}bg-primary text-primary-foreground{% else %}border border-border text-foreground hover:bg-secondary{% endif %}">
+                        {% if status == 'in-progress' %}In Progress{% else %}{{ status|capitalize }}{% endif %}
+                    </button>
+                </a>
+                {% endfor %}
+            </div>
+
+            <!-- Tickets List -->
+            {% if tickets|length > 0 %}
+            <div class="space-y-3">
+                {% for ticket in tickets %}
+                <div class="p-4 border border-border rounded-lg bg-card hover:shadow-md transition">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
+                        <div class="flex-1 min-w-0 w-full">
+                            <h3 class="font-semibold text-foreground truncate text-sm sm:text-base">{{ ticket.title }}</h3>
+                            <p class="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">{{ ticket.description }}</p>
+                            <div class="flex gap-2 mt-3 flex-wrap">
+                                <span class="px-2 py-1 rounded text-xs font-medium {% if ticket.status == 'open' %}bg-status-open/10 text-status-open{% elseif ticket.status == 'in-progress' %}bg-status-in-progress/10 text-status-in-progress{% else %}bg-status-closed/10 text-status-closed{% endif %}">
+                                    {% if ticket.status == 'in-progress' %}In Progress{% else %}{{ ticket.status|capitalize }}{% endif %}
+                                </span>
+                                <span class="px-2 py-1 rounded text-xs font-medium {% if ticket.priority == 'low' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200{% elseif ticket.priority == 'medium' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{% endif %}">
+                                    {{ ticket.priority|capitalize }} Priority
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 flex-shrink-0 w-full sm:w-auto">
+                            <button
+                                onclick="editTicket('{{ ticket.id }}', '{{ ticket.title }}', '{{ ticket.description }}', '{{ ticket.status }}', '{{ ticket.priority }}')"
+                                class="flex-1 sm:flex-none px-4 py-2 border border-border text-foreground rounded-md hover:bg-secondary transition text-sm font-medium"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onclick="if(confirm('Are you sure?')) { deleteTicket('{{ ticket.id }}'); }"
+                                class="flex-1 sm:flex-none px-4 py-2 border border-border text-destructive rounded-md hover:bg-destructive/10 transition text-sm font-medium"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-8 sm:p-12 text-center border border-border rounded-lg bg-card">
+                <p class="text-muted-foreground">No tickets found</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Create Ticket Modal -->
+    <div id="createModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-card border border-border rounded-lg p-6 w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-4">Create Ticket</h2>
+            <form method="POST" class="space-y-4">
+                <input type="hidden" name="action" value="create">
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-2">Title</label>
+                    <input
+                        type="text"
+                        name="title"
+                        placeholder="Ticket title"
+                        class="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-2">Description</label>
+                    <textarea
+                        name="description"
+                        placeholder="Ticket description"
+                        class="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        rows="4"
+                    ></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-2">Status</label>
+                    <select
+                        name="status"
+                        class="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                        <option value="open">Open</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-2">Priority</label>
+                    <select
+                        name="priority"
+                        class="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button
+                        type="submit"
+                        class="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition font-medium"
+                    >
+                        Create
+                    </button>
+                    <button
+                        type="button"
+                        onclick="document.getElementById('createModal').style.display='none'"
+                        class="flex-1 px-4 py-2 border border-border text-foreground rounded-md hover:bg-secondary transition font-medium"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Ticket Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-card border border-border rounded-lg p-6 w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-4">Edit Ticket</h2>
+            <form method="POST" class="space-y-4">
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="id" id="editId">
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-2">Title</label>
+                    <input
+                        type="text"
+                        name="title"
+                        id="editTitle"
+                        placeholder="Ticket title"
+                        class="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-2">Description</label>
+                    <textarea
+                        name="description"
+                        id="editDescription"
+                        placeholder="Ticket description"
+                        class="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        rows="4"
+                    ></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-2">Status</label>
+                    <select
+                        name="status"
+                        id="editStatus"
+                        class="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                        <option value="open">Open</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-2">Priority</label>
+                    <select
+                        name="priority"
+                        id="editPriority"
+                        class="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button
+                        type="submit"
+                        class="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition font-medium"
+                    >
+                        Update
+                    </button>
+                    <button
+                        type="button"
+                        onclick="document.getElementById('editModal').style.display='none'"
+                        class="flex-1 px-4 py-2 border border-border text-foreground rounded-md hover:bg-secondary transition font-medium"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function editTicket(id, title, description, status, priority) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editTitle').value = title;
+            document.getElementById('editDescription').value = description;
+            document.getElementById('editStatus').value = status;
+            document.getElementById('editPriority').value = priority;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function deleteTicket(id) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = '<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="' + id + '">';
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
+</div>
+{% endblock %}
